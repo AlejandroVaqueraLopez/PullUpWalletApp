@@ -1,0 +1,52 @@
+Nota sobre uso de App.
+Se entregará una descripción de los requisitos y como instalar/ejecutar su proyecto.
+***************************************************************************************************************
+	Librería:
+		ASColorSlider - Librería del sdk B4A, para el selector de color.
+
+		Esta librería es externa, se encuentra en la carpeta “Librerias” o la 
+		ruta  (C:\Morales-Vaquera-Proyecto-U3-6DM\Librerias)
+
+	Instalación de libreria:
+		Copiar el archivo de libreria en la carpeta de "Libraries" ubicada en donde se instaló
+		el "b4a-sdk" dentro de la carpeta "Basic4android", allí se encuentra dicha carpeta.
+		En la ruta (C:\b4a-sdk\Basic4android\Libraries)
+ 		
+		*Puede variar el nombre de la carpeta del sdk al nombre con el que se instaló al gusto.
+		(C:\ --->  b4a-sdk <---- \Basic4android\Libraries)
+
+	Activación de la librería en el IDE B4A:
+		Dentro del IDE B4A dirigirse al botón (Libraries Manager) ubicado en la parte inferior derecha.
+		Buscar el nombre "ASColorSlider" y palomear la libreria
+***************************************************************************************************************
+	Librería:
+		Asegurarse de que estas librerias internas esten palomeadas:
+		
+		Animation
+		SQL
+		Core
+		JavaObject
+		StringUtils
+		ViewsEx
+		XUI
+		ASColorSlider
+***************************************************************************************************************
+	Imágenes:
+		Importar todas las imagenes que se encuentran en la carpeta "Imagenes" en la ruta:
+		(C:\Morales-Vaquera-Proyecto-U3-6DM\Imagenes)
+
+	Importación de imagenes al IDE B4A:
+		Dentro del IDE B4A dirigirse al botón (Files Manager) ubicado en la parte inferior derecha.
+		Agregar todas las imagenes
+***************************************************************************************************************
+	Base de datos:
+		Importar la base de datos que se encuentran en la carpeta "BaseDatos" en la ruta:
+		(C:\Morales-Vaquera-Proyecto-U3-6DM\BaseDatos)
+
+	Importación de base de datos Sqlite al IDE B4A:
+		Dentro del IDE B4A dirigirse al botón (Files Manager) ubicado en la parte inferior derecha.
+		Agregar el archivo de base de datos.
+*************************************************************************************************************** 
+		
+		Se recomienda utilizar un dispositivo de Android version 5 o superior y con una 
+		pantalla de 6 pulgadas o más.

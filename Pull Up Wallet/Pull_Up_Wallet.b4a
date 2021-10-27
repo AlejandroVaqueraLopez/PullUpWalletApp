@@ -1,0 +1,650 @@
+﻿Build1=Default,pullup.wallet
+File1=icon.png
+File10=LFormSuscripcion.bal
+File11=LMain.bal
+File12=LPantallaDeslizable.bal
+File13=pullupwalletbd.db
+File14=slide1.png
+File15=slide2.png
+File16=slide3.png
+File17=slide4.png
+File18=slide5.png
+File19=slide6.png
+File2=indicator_active.png
+File20=slide7.png
+File3=indicator_inactive.png
+File4=LDeslizable.bal
+File5=LEditarIngresoRecurrente.bal
+File6=LEditarIngresoUnico.bal
+File7=LFormGasto.bal
+File8=LFormIngreso.bal
+File9=LFormMetaAhorro.bal
+FileGroup1=Default Group
+FileGroup10=Default Group
+FileGroup11=Default Group
+FileGroup12=Default Group
+FileGroup13=Default Group
+FileGroup14=Default Group
+FileGroup15=Default Group
+FileGroup16=Default Group
+FileGroup17=Default Group
+FileGroup18=Default Group
+FileGroup19=Default Group
+FileGroup2=Default Group
+FileGroup20=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+FileGroup5=Default Group
+FileGroup6=Default Group
+FileGroup7=Default Group
+FileGroup8=Default Group
+FileGroup9=Default Group
+Group=Default Group
+Library1=animation
+Library2=ascolorslider
+Library3=core
+Library4=sql
+Library5=stringutils
+Library6=xui
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="14" android:targetSdkVersion="29"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~'End of default text.~\n~
+Module1=Diapositivas
+Module10=IngresosUnicos
+Module11=MetasDeAhorro
+Module12=registrarGasto
+Module13=registrarIngreso
+Module14=registrarMetaAhorro
+Module15=registrarSuscripcion
+Module16=Starter
+Module17=Suscripciones
+Module18=Tutorial
+Module2=editarGasto
+Module3=editarIngresoRecurrente
+Module4=editarIngresoUnico
+Module5=editarMetaAhorro
+Module6=editarSuscripcion
+Module7=Gastos
+Module8=Historiales
+Module9=IngresosRecurrentes
+NumberOfFiles=20
+NumberOfLibraries=6
+NumberOfModules=18
+Version=10.6
+@EndOfDesignText@
+#Region  Project Attributes
+	#ApplicationLabel: Pull Up Wallet
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: portrait
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes
+	#FullScreen: False
+	#IncludeTitle: False
+	#BridgeLogger: True
+	#IncludeTitle: False
+#End Region
+
+Sub Process_Globals
+	'These global variables will be declared once when the application starts.
+	'These variables can be accessed from all modules.
+	Dim alturaDispositivo As Int
+	Dim anchoDispositivo As Int
+	Type RegistroGasto(nombre As String, monto As Int, descripcion As String, fechaRegistro As String, color As Int)
+	Type RegistroSuscripcion(nombre As String, monto As Int, descripcion As String, periodo As Int, fechaPago As String, color As Int)
+	Type RegistroMetaAhorro(nombre As String, montoAhorro As Int, montoMeta As Int, descripcion As String, periodo As Int, progreso As Int, fechaPago As String, color As Int)
+	Type RegistroIngreso(nombre As String, monto As Int, descripcion As String, periodo As Int, fechaCobro As String, color As Int)
+	Dim sql As SQL
+End Sub
+
+Sub Globals
+	'These global variables will be redeclared each time the activity is created.
+	Dim cs As CSBuilder 'https://www.b4x.com/android/forum/threads/charsequence-csbuilder-tutorial.76226/
+	Dim click As Boolean
+	Dim cur As Cursor
+	Dim balance As Int
+	Dim ingresos As Int
+	Dim egresos As Int
+	
+	'Views
+	'Botones
+	Private btnIngresosRecurrentes As Button
+	Private btnIngresosUnicos As Button
+	Private btnGastos As Button
+	Private btnMetasDeAhorro As Button
+	Private btnSuscripciones As Button
+	Private btnHistoriales As Button
+	Private btnAgregar As Button
+	Private btnAgregarGasto As Button
+	Private btnAgregarIngreso As Button
+	Private btnAgregarMetaDeAhorro As Button
+	Private btnAgregarSuscripcion As Button
+	Private btnGenerarHistorial As Button
+	'Etiquetas
+	Private lblExplora As Label
+	Private lblContornoBoton As Label
+	Private lblIconoEgresos As Label
+	Private lblIconoIngresos As Label
+	Private lblBalance As Label
+	Private lblEgresos As Label
+	Private lblIngresos As Label
+	Private lblBalanceTitulo As Label
+	Private lblEstado As Label
+	'Páneles
+	Private pnlBalance As Panel
+	Private pnlOpciones As Panel
+	Private pnlNavInferior As Panel
+	Private pnlAgregar As Panel
+	Private pnlCabecera As Panel
+End Sub
+
+'Esta subrutina verifica la primera vez que el usuario utiliza la aplicación, para ejecutar el slider tutorial
+Sub verificarPrimerIngreso
+	cur = sql.ExecQuery("SELECT * FROM primer_uso")
+	If(cur.RowCount = 0) Then
+		sql.ExecNonQuery2("INSERT INTO primer_uso (ingreso) VALUES (?)", Array As Object("Pull Up"))
+		sql.ExecNonQuery2("INSERT INTO ingresos (suma_ingresos) VALUES (?)", Array As Object(0))
+		sql.ExecNonQuery2("INSERT INTO egresos (suma_egresos) VALUES (?)", Array As Object(0))
+		StartActivity(Tutorial)
+	End If
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	sql = Starter.sql
+	verificarPrimerIngreso
+	If(FirstTime = True) Then 
+		cobraIngresos
+		realizaEgresos
+	End If
+	Activity.LoadLayout("LMain")
+	Activity.Color = Colors.ARGB(255, 233, 236, 239)
+	alturaDispositivo = GetDeviceLayoutValues.Height
+	anchoDispositivo = GetDeviceLayoutValues.Width
+	click = False
+	ingresos = balanceActualIngresos
+	egresos = balanceActualEgresos
+	balance = balanceGeneral
+		
+	'Panel de navegación superior
+	pnlCabecera.Height = alturaDispositivo * 0.07
+	pnlCabecera.Width = anchoDispositivo * 0.9
+	pnlCabecera.Left = (anchoDispositivo - pnlCabecera.Width) / 2
+	'Subcontrol
+	'Etiqueta de estado según el balance
+	lblEstado.Height = pnlCabecera.Height
+	lblEstado.Width = lblEstado.Height
+	lblEstado.Color = Colors.Transparent
+	lblEstado.TextSize = 24
+	lblEstado.Gravity = Gravity.CENTER
+	estadoBalance(balance)
+	
+	'-----------------------------------------------------------------------------------------
+
+	'Panel de balance
+	pnlBalance.Width = anchoDispositivo * 0.9
+	pnlBalance.Height = alturaDispositivo * 0.2
+	pnlBalance.Left = (anchoDispositivo - pnlBalance.Width) / 2
+	pnlBalance.Top = pnlCabecera.Top + pnlCabecera.Height + 50
+	'Subcontroles
+	'Etiquetas
+	'Etiqueta para título
+	lblBalanceTitulo.Top = pnlBalance.Height * 0.05
+	lblBalanceTitulo.Gravity = Gravity.CENTER_HORIZONTAL
+	'Etiqueta para desplegar el balance
+	lblBalance.Top = lblBalanceTitulo.Top + lblBalanceTitulo.Height
+	lblBalance.Gravity = Gravity.CENTER_HORIZONTAL
+	lblBalance.Text = "$" & balance & ".00"
+	lblBalance.TextSize = 16
+	'Ícono de ingresos
+	lblIconoIngresos.Left = lblBalanceTitulo.Top
+	lblIconoIngresos.Top = pnlBalance.Height * 0.35
+	'Información sobre ingresos
+	lblIngresos.Height = lblIconoIngresos.Height
+	lblIngresos.Width = (pnlBalance.Width / 2) - (lblIconoIngresos.Left * 2 + lblIconoIngresos.Width)
+	lblIngresos.Left = lblIconoIngresos.Left * 2 + lblIconoIngresos.Width
+	lblIngresos.Top = lblIconoIngresos.Top
+	lblIngresos.Text = "$" & ingresos & ".00"
+	lblIngresos.TextSize = 13
+	'Ícono de egresos
+	lblIconoEgresos.Left = pnlBalance.Width / 2 + lblIconoIngresos.Left
+	lblIconoEgresos.Top = lblIconoIngresos.Top
+	'Información sobre egresos
+	lblEgresos.Height = lblIconoEgresos.Height
+	lblEgresos.Width = lblIngresos.Width
+	lblEgresos.Left = lblIconoEgresos.Left + lblIconoEgresos.Width + lblIconoIngresos.Left
+	lblEgresos.Top = lblIconoEgresos.Top
+	lblEgresos.Text = "$" & egresos & ".00"
+	lblEgresos.TextSize = 13
+	'Botones
+	'Botón para generar historial
+	btnGenerarHistorial.TextSize = 14
+	btnGenerarHistorial.Height = (pnlBalance.Height - (lblEgresos.Top + lblEgresos.Height)) * 0.8
+	btnGenerarHistorial.Width = pnlBalance.Width * 0.4
+	btnGenerarHistorial.Top = lblIconoIngresos.Top + lblIconoIngresos.Height + (pnlBalance.Height - (lblEgresos.Top + lblEgresos.Height + btnGenerarHistorial.Height)) / 2
+	btnGenerarHistorial.Left = ((pnlBalance.Width / 2) - btnGenerarHistorial.Width) / 2
+	'Botón para ver historiales
+	btnHistoriales.TextSize = 14
+	btnHistoriales.Height = btnGenerarHistorial.Height
+	btnHistoriales.Width = btnGenerarHistorial.Width
+	btnHistoriales.Top = btnGenerarHistorial.Top
+	btnHistoriales.Left = (pnlBalance.Width / 2) + btnGenerarHistorial.Left
+	
+	'-----------------------------------------------------------------------------------------
+	
+	'Panel de opciones
+	pnlOpciones.Height = alturaDispositivo * 0.5
+	pnlOpciones.Width = anchoDispositivo * 0.9
+	pnlOpciones.Left = pnlCabecera.Left
+	pnlOpciones.Top = pnlBalance.Top + pnlBalance.Height + 50
+	'Subcontroles del panel
+	'Etiqueta
+	lblExplora.Width = anchoDispositivo * 0.8
+	lblExplora.Left = (pnlOpciones.Width - lblExplora.Width) / 2
+	lblExplora.Top = lblExplora.Left
+	lblExplora.TextSize = 16
+	'Botones
+	'Botón ingresos recurrentes
+	btnIngresosRecurrentes.Top = lblExplora.Top * 2 + lblExplora.Height
+	btnIngresosRecurrentes.Left = lblExplora.Left
+	btnIngresosRecurrentes.Width = lblExplora.Width
+	btnIngresosRecurrentes.Height = ((pnlOpciones.Height - (lblExplora.Top + lblExplora.Height)) - lblExplora.Top * 6) / 5
+	btnIngresosRecurrentes.Text = cs.Initialize.Color(Colors.ARGB(255, 78, 236, 26)).Typeface(Typeface.FONTAWESOME).Size(16).Append(Chr(0xF0D6)).Pop.Color(Colors.Black).Append("		Ingresos recurrentes").PopAll
+	'https://www.b4x.com/android/forum/threads/b4x-fontawesome-material-icons-fonts.72908/ FontAwesome con Texto
+	'Botón ingresos únicos
+	btnIngresosUnicos.Top = btnIngresosRecurrentes.Top + btnIngresosRecurrentes.Height + lblExplora.Left
+	btnIngresosUnicos.Left = btnIngresosRecurrentes.Left
+	btnIngresosUnicos.Width = btnIngresosRecurrentes.Width
+	btnIngresosUnicos.Height = btnIngresosRecurrentes.Height
+	btnIngresosUnicos.Text = cs.Initialize.Color(Colors.ARGB(255, 255, 187, 0)).Typeface(Typeface.FONTAWESOME).Size(16).Append(Chr(0xF06B)).Pop.Color(Colors.Black).Append("		Ingresos únicos").PopAll
+	'Botón gastos
+	btnGastos.Top = btnIngresosUnicos.Top + btnIngresosUnicos.Height + lblExplora.Left
+	btnGastos.Left = btnIngresosRecurrentes.Left
+	btnGastos.Width = btnIngresosRecurrentes.Width
+	btnGastos.Height = btnIngresosRecurrentes.Height
+	btnGastos.Text = cs.Initialize.Color(Colors.ARGB(255, 223, 32, 11)).Typeface(Typeface.FONTAWESOME).Size(16).Append(Chr(0xF283)).Pop.Color(Colors.Black).Append("		Gastos").PopAll
+	'Botón suscripciones
+	btnSuscripciones.Top = btnGastos.Top + btnGastos.Height + lblExplora.Left
+	btnSuscripciones.Left = btnIngresosRecurrentes.Left
+	btnSuscripciones.Width = btnIngresosRecurrentes.Width
+	btnSuscripciones.Height = btnIngresosRecurrentes.Height
+	btnSuscripciones.Text = cs.Initialize.Color(Colors.ARGB(255, 0, 114, 255)).Typeface(Typeface.FONTAWESOME).Size(16).Append(Chr(0xF0E2)).Pop.Color(Colors.Black).Append("		Suscripciones").PopAll
+	'Botón metas de ahorros
+	btnMetasDeAhorro.Top = btnSuscripciones.Top + btnSuscripciones.Height + lblExplora.Left
+	btnMetasDeAhorro.Left = btnIngresosRecurrentes.Left
+	btnMetasDeAhorro.Width = btnIngresosRecurrentes.Width
+	btnMetasDeAhorro.Height = btnIngresosRecurrentes.Height
+	btnMetasDeAhorro.Text = cs.Initialize.Color(Colors.ARGB(255, 188, 36, 97)).Typeface(Typeface.FONTAWESOME).Size(16).Append(Chr(0xF19C)).Pop.Color(Colors.Black).Append("		Metas de ahorro").PopAll
+	
+	'-----------------------------------------------------------------------------------------
+	
+	'Panel de navegación inferior
+	pnlNavInferior.Height = alturaDispositivo * 0.08
+	pnlNavInferior.Width = anchoDispositivo
+	pnlNavInferior.Left = 0
+	pnlNavInferior.Top = alturaDispositivo - pnlNavInferior.Height
+	'Controles relacionados
+	'Botón para agregar
+	btnAgregar.Width = anchoDispositivo * 0.15
+	btnAgregar.Height = btnAgregar.Width
+	btnAgregar.Top = pnlNavInferior.Top - btnAgregar.Height / 2
+	btnAgregar.Left = (anchoDispositivo - btnAgregar.Width) / 2
+	btnAgregar.Text = Chr(0xF067) 'Ícono de FontAwesome O Material Icons (según indique su propiedad TypeFace
+	'Etiqueta para contorno del botón de agregar
+	lblContornoBoton.Width = anchoDispositivo * 0.17
+	lblContornoBoton.Height = lblContornoBoton.Width
+	lblContornoBoton.Left = (anchoDispositivo - lblContornoBoton.Width) / 2
+	lblContornoBoton.Top = pnlNavInferior.Top - lblContornoBoton.Height / 2
+
+	'-----------------------------------------------------------------------------------------
+	
+	'Panel que contiene las opciones de agregar
+	pnlAgregar.Width = anchoDispositivo * 0.6
+	pnlAgregar.Height = pnlAgregar.Width
+	pnlAgregar.Left = (anchoDispositivo - pnlAgregar.Width) / 2
+	pnlAgregar.Top = lblContornoBoton.Top - pnlAgregar.Height - 50
+	'Subcontroles del panel
+	'Botones
+	'Botón para agregar ingreso
+	btnAgregarIngreso.Height = (pnlAgregar.Height * 0.76) / 4
+	btnAgregarIngreso.Width = pnlAgregar.Width * 0.9
+	btnAgregarIngreso.Top = pnlAgregar.Height * 0.048
+	btnAgregarIngreso.Left = (pnlAgregar.Width - btnAgregarIngreso.Width) / 2
+	'Botón para agregar gasto
+	btnAgregarGasto.Height = btnAgregarIngreso.Height
+	btnAgregarGasto.Width = btnAgregarIngreso.Width
+	btnAgregarGasto.Top = btnAgregarIngreso.Top * 2 + btnAgregarIngreso.Height
+	btnAgregarGasto.Left = btnAgregarIngreso.Left
+	'Botón para agregar suscripción
+	btnAgregarSuscripcion.Height = btnAgregarIngreso.Height
+	btnAgregarSuscripcion.Width = btnAgregarIngreso.Width
+	btnAgregarSuscripcion.Top = btnAgregarGasto.Top + btnAgregarGasto.Height + pnlAgregar.Height * 0.04
+	btnAgregarSuscripcion.Left = btnAgregarIngreso.Left
+	'Botón para agregar meta de ahorro
+	btnAgregarMetaDeAhorro.Height = btnAgregarIngreso.Height
+	btnAgregarMetaDeAhorro.Width = btnAgregarIngreso.Width
+	btnAgregarMetaDeAhorro.Top = btnAgregarSuscripcion.Top + btnAgregarSuscripcion.Height  + pnlAgregar.Height * 0.04
+	btnAgregarMetaDeAhorro.Left = btnAgregarIngreso.Left
+End Sub
+
+Sub Activity_Resume
+	
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+'Genera un historial que contiene la suma de ingresos y egresos y el balance respectivo a la fecha actual. Se reinician
+'las sumas de los ingresos y egresos, esto ayuda a prevenir que se desborde el texto de los montos en las etiquetas cuando'
+'estos lleguen a una suma muy granda. Aunque es poco factible que suceda
+Private Sub btnGenerarHistorial_Click
+	Dim resultado As Int
+	Dim totalIngresos As Int 
+	Dim totalEgresos As Int 
+	Dim totalBalance As Int
+	totalIngresos = balanceActualIngresos
+	totalEgresos = balanceActualEgresos
+	totalBalance = balanceGeneral
+	
+	resultado = Msgbox2("¿Estás seguro?", "Generar historial", "Sí", "", "No", Null)
+	'ACTUALIZAR INGRESOS Y EGRESOS
+	If (resultado = DialogResponse.POSITIVE) Then
+		sql.ExecNonQuery2("INSERT INTO historial_balance (balance, suma_ingresos, suma_egresos, fecha_historial) VALUES (?, ?, ?, ?)", Array As Object(totalBalance, totalIngresos, totalEgresos, obtenerFechaActual))
+		ToastMessageShow("Historial generado", True)
+		sql.ExecNonQuery2("UPDATE ingresos SET suma_ingresos = ?  WHERE id_ingreso = 1", Array As Object(0))
+		sql.ExecNonQuery2("UPDATE egresos SET suma_egresos = ?  WHERE id_egreso = 1", Array As Object(0))
+		lblIngresos.Text = "$" & "0.00"
+		lblEgresos.Text = "$"  & "0.00"
+	End If
+End Sub
+
+'Para ir a las respectivas listas
+Private Sub btnHistoriales_Click
+	StartActivity(Historiales)
+End Sub
+
+Private Sub btnSuscripciones_Click
+	StartActivity(Suscripciones)
+End Sub
+
+Private Sub btnMetasDeAhorro_Click
+	StartActivity(MetasDeAhorro)
+End Sub
+
+Private Sub btnIngresosUnicos_Click
+	StartActivity(IngresosUnicos)
+End Sub
+
+Private Sub btnIngresosRecurrentes_Click
+	StartActivity(IngresosRecurrentes)
+End Sub
+
+Private Sub btnGastos_Click
+	StartActivity(Gastos)
+End Sub
+
+'Para registrar un tipo de movimiento
+Private Sub btnAgregarSuscripcion_Click
+	StartActivity(registrarSuscripcion)
+	btnAgregar_Click
+End Sub
+
+Private Sub btnAgregarMetaDeAhorro_Click
+	StartActivity(registrarMetaAhorro)
+	btnAgregar_Click
+End Sub
+
+Private Sub btnAgregarIngreso_Click
+	StartActivity(registrarIngreso)
+	btnAgregar_Click
+End Sub
+
+Private Sub btnAgregarGasto_Click
+	StartActivity(registrarGasto)
+	btnAgregar_Click
+End Sub
+
+'Abre el panel de opciones para registrar
+Private Sub btnAgregar_Click
+	click = Not(click)
+	pnlAgregar.Elevation = 8dip
+	pnlAgregar.SetVisibleAnimated(200, click) 'https://www.b4x.com/android/forum/threads/simple-animations-in-b4a-v4-00.47731/
+End Sub
+
+'Obtiene la fecha actual del sistema
+Sub obtenerFechaActual As String
+	Dim ahora As Long
+	ahora = DateTime.Now
+	Return (DateTime.Date(ahora))
+	'https://www.b4x.com/android/help/core.html#datetime OBTENIDO DE AQUI
+End Sub
+
+'Obtiene la suma de ingresos
+Sub balanceActualIngresos As Int
+	'Aquí se compara cada ingreso recurrente (que tenga periodo) con la fecha actual del ‘dispositivo, esto es para hacer la suma correspondiente al balance general ‘dependiendo del periodo en el que se ingresa ese dinero recurrente
+	cur = sql.ExecQuery("SELECT * FROM ingresos")
+	cur.Position = 0
+	Return cur.GetInt("suma_ingresos")
+End Sub
+
+'Obtiene la suma de egresos
+Sub balanceActualEgresos As Int
+	'Aquí se compara cada egreso recurrente (que tenga periodo) con la fecha actual del ‘dispositivo, esto es para hacer la resta correspondiente al balance general ‘dependiendo del periodo en el que se ingresa ese dinero recurrente
+	cur = sql.ExecQuery("SELECT * FROM egresos")
+	cur.Position = 0
+	Return cur.GetInt("suma_egresos")
+End Sub
+
+'Obtiene el balance general que se obtiene de la resta de los egresos a los ingresos
+Sub balanceGeneral As Int
+	'Aquí se hacen las restas y sumas de los ingresos y egresos recurrentes
+	Dim ingresosActuales As Int
+	Dim egresosActuales As Int
+	Dim balanceActual As Int
+	
+	ingresosActuales = balanceActualIngresos
+	egresosActuales = balanceActualEgresos
+	
+	cur = sql.ExecQuery("SELECT * FROM historial_balance ORDER BY rowid ASC")
+	If(cur.RowCount > 0) Then
+		cur.Position = cur.RowCount - 1
+		balanceActual = cur.GetInt("balance")
+		balanceActual = balanceActual + ingresosActuales - egresosActuales
+	Else
+		balanceActual = ingresosActuales - egresosActuales
+	End If
+	
+	Return balanceActual
+End Sub
+
+'Esta función se encarga de iterar los registros de la tabla ingresos_recurrentes, donde va comprobando si la fuente de ingresos
+'tiene que ser cobrada dado la fecha de cobro del registro con respecto a la fecha actual y cuántas veces tuvo que haber sido
+'cobrada según su periodo
+Sub cobraIngresos
+	Dim cur1 As Cursor
+	Dim cur2 As Cursor
+	Dim fechaActual As String
+	Dim fechaActualLong As Long
+	Dim fechaCobro As String
+	Dim fechaCobroLong As Long
+	Dim ingresosActuales As Int
+	Dim monto As Int
+	Dim periodo As Int
+
+	fechaActual = DateTime.Now
+	fechaActual = DateTime.Date(fechaActual)
+	fechaActualLong = DateTime.DateParse(fechaActual)
+
+	cur1 = sql.ExecQuery("SELECT * FROM ingresos_recurrentes ORDER BY rowid ASC")
+	cur2 = sql.ExecQuery("SELECT * FROM ingresos")
+	If(cur1.RowCount <> 0) Then
+		For contador = 0  To cur1.RowCount - 1 Step 1
+			cur1.Position = contador
+			cur2.Position = 0
+	  
+			ingresosActuales = cur2.GetInt("suma_ingresos")
+			monto = cur1.GetInt("monto")
+			periodo = cur1.GetInt("periodo")
+	  
+			'Fechas
+			fechaCobro = cur1.GetString("fecha_cobro").Replace("-", "/")
+			fechaCobroLong = DateTime.DateParse(fechaCobro)
+	  
+			If(fechaCobroLong <= fechaActualLong) Then
+				ingresosActuales = ingresosActuales + monto
+	      
+				Do Until (DateTime.Add(fechaCobroLong, 0, 0, periodo) > fechaActualLong)
+					ingresosActuales = ingresosActuales + monto
+					'Fechas
+					fechaActual = DateTime.Now
+					fechaActual = DateTime.Date(fechaActual)
+					fechaActualLong = DateTime.DateParse(fechaActual)
+					fechaCobroLong = DateTime.Add(fechaCobroLong, 0, 0, periodo)
+				Loop
+				
+				fechaCobroLong = DateTime.Add(fechaCobroLong, 0, 0, periodo)
+				fechaCobro = DateTime.Date(fechaCobroLong)
+			End If
+	    
+			sql.ExecNonQuery2("UPDATE ingresos SET suma_ingresos = ?  WHERE id_ingreso = 1", Array As Object(ingresosActuales))
+			sql.ExecNonQuery2("UPDATE ingresos_recurrentes SET fecha_cobro = ? WHERE id_ingreso_recurrente = '" & (contador + 1) & "'", Array As Object(fechaCobro))
+		Next
+	End If
+End Sub
+
+'Esta función se encarga de iterar los registros de la tabla suscripciones y metas_ahorro, donde va comprobando si
+'las suscripciones o metas de ahorro tienen que ser pagadas o depositadas, respectivamente, dado la fecha de cobro del 
+'registro con respecto a la fecha actual y cuántas veces tuvo que haber sido pagada o depositada según su periodo
+Sub realizaEgresos
+	Dim cur1 As Cursor
+	Dim cur2 As Cursor
+	Dim fechaActual As String
+	Dim fechaActualLong As Long
+	Dim fechaPago As String
+	Dim fechaPagoLong As Long
+	Dim egresosActuales As Int
+	Dim monto As Int
+	Dim periodo As Int
+	Dim progreso As Int
+	Dim montoMeta As Int
+
+	fechaActual = DateTime.Now
+	fechaActual = DateTime.Date(fechaActual)
+	fechaActualLong = DateTime.DateParse(fechaActual)
+
+	cur1 = sql.ExecQuery("SELECT * FROM suscripciones ORDER BY rowid ASC")
+	cur2 = sql.ExecQuery("SELECT * FROM egresos")
+	
+	If(cur1.RowCount <> 0) Then
+		For contador = 0  To cur1.RowCount - 1 Step 1
+			cur1.Position = contador
+			cur2.Position = 0
+	  
+			egresosActuales = cur2.GetInt("suma_egresos")
+			monto = cur1.GetInt("monto")
+			periodo = cur1.GetInt("periodo")
+	  
+			'Fechas
+			fechaPago = cur1.GetString("fecha_pago").Replace("-", "/")
+			fechaPagoLong = DateTime.DateParse(fechaPago)
+	  
+			If(fechaPagoLong <= fechaActualLong) Then
+				egresosActuales = egresosActuales + monto
+	      
+				Do Until (DateTime.Add(fechaPagoLong, 0, 0, periodo) > fechaActualLong)
+					egresosActuales = egresosActuales + monto
+					'Fechas
+					fechaActual = DateTime.Now
+					fechaActual = DateTime.Date(fechaActual)
+					fechaActualLong = DateTime.DateParse(fechaActual)
+					fechaPagoLong = DateTime.Add(fechaPagoLong, 0, 0, periodo)
+				Loop
+				
+				fechaPagoLong = DateTime.Add(fechaPagoLong, 0, 0, periodo)
+				fechaPago = DateTime.Date(fechaPagoLong)
+			End If
+	    
+			sql.ExecNonQuery2("UPDATE egresos SET suma_egresos = ?  WHERE id_egreso = 1", Array As Object(egresosActuales))
+			sql.ExecNonQuery2("UPDATE suscripciones SET fecha_pago = ? WHERE id_suscripcion = '" & (contador + 1) & "'", Array As Object(fechaPago))
+			cur = sql.ExecQuery("SELECT * FROM suscripciones WHERE id_suscripcion = '" & (contador + 1) & "'")
+			cur.Position = 0 
+		Next
+	End If
+	cur1 = sql.ExecQuery("SELECT * FROM metas_ahorro ORDER BY rowid ASC")
+	cur2 = sql.ExecQuery("SELECT * FROM egresos")
+
+	egresosActuales = 0
+	    
+	If(cur1.RowCount <> 0) Then                          
+		For contador = 0  To cur1.RowCount - 1 Step 1
+			cur1.Position = contador
+			cur2.Position = 0
+			progreso = cur1.GetInt("progreso")
+			montoMeta = cur1.getInt("monto_meta")
+	  
+			egresosActuales = cur2.GetInt("suma_egresos")
+			monto = cur1.GetInt("monto_ahorro")
+			periodo = cur1.GetInt("periodo_ahorro")
+	    
+			'Fechas
+			fechaPago = cur1.GetString("fecha_pago").Replace("-", "/")
+			fechaPagoLong = DateTime.DateParse(fechaPago)
+	  
+			If(fechaPagoLong <= fechaActualLong) Then
+				If(progreso + monto <= montoMeta) Then
+					egresosActuales = egresosActuales + monto
+					progreso = progreso + monto
+				Else
+					egresosActuales = montoMeta - progreso
+					progreso = montoMeta
+				End If
+	      
+				Do Until (DateTime.Add(fechaPagoLong, 0, 0, periodo) > fechaActualLong)
+					If(progreso + monto <= montoMeta) Then
+						egresosActuales = egresosActuales + monto
+						progreso = progreso + monto
+					Else
+						egresosActuales = montoMeta - progreso
+						progreso = montoMeta
+					End If
+					'Fechas
+					fechaActual = DateTime.Now
+					fechaActual = DateTime.Date(fechaActual)
+					fechaActualLong = DateTime.DateParse(fechaActual)
+					fechaPagoLong = DateTime.Add(fechaPagoLong, 0, 0, periodo)
+				Loop
+	      
+				fechaPagoLong = DateTime.Add(fechaPagoLong, 0, 0, periodo)
+				fechaPago = DateTime.Date(fechaPagoLong)
+			End If
+	    
+			sql.ExecNonQuery2("UPDATE egresos SET suma_egresos = ?  WHERE id_egreso = 1", Array As Object(egresosActuales))
+			sql.ExecNonQuery2("UPDATE metas_ahorro SET fecha_pago = ?, progreso = ? WHERE id_meta_ahorro = '" & (contador + 1) & "'", Array As Object(fechaPago, progreso))
+		Next
+	End If
+End Sub
+
+'Actualiza las etiquetas informativas que despliegan el balance, los ingresos y los egresos. Es llamada cuando se presiona
+'el botón menú de los activities "Gastos" o "IngresosUnicos", ya que, los tipos de registros que contienen, influyen inmediatamente
+'en las sumas de ingresos y egresos, a comparación de los movimientos recurrentes
+Sub actualizarDatos
+	lblBalance.Text = "$" & balanceGeneral & ".00"
+	lblIngresos.Text = "$" & balanceActualIngresos & ".00"
+	lblEgresos.Text = "$" & balanceActualEgresos & ".00"
+	estadoBalance(balanceGeneral)
+End Sub
+
+'Despliega el estado actual según el balance, con caritas
+Sub estadoBalance(balanceActual As Int)
+	If(balanceActual < 0) Then
+		lblEstado.Text = Chr(0xE811)
+		lblEstado.TextColor = Colors.ARGB(255, 234, 33, 7)
+	Else If(balanceActual = 0) Then
+		lblEstado.Text = Chr(0xE812)
+		lblEstado.TextColor = Colors.ARGB(255, 234, 199, 7)
+	Else 
+		lblEstado.Text = Chr(0xE813)
+		lblEstado.TextColor = Colors.ARGB(255, 15, 234, 7)
+	End If
+End Sub
